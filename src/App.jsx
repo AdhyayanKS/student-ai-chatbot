@@ -1,65 +1,115 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { supabase } from "./supabaseClient"
 
-export default function App(){
+export default function App() {
 
 const [input,setInput] = useState("")
 const [messages,setMessages] = useState([])
+const [loading,setLoading] = useState(false)
+
+const bottomRef = useRef(null)
+
+useEffect(()=>{
+ bottomRef.current?.scrollIntoView({behavior:"smooth"})
+},[messages])
 
 async function sendMessage(){
 
  if(!input.trim()) return
 
- const userMsg={
+ const userMessage={
    role:"user",
-   text:input
+   text:input,
+   time:new Date().toLocaleTimeString()
  }
 
- const botMsg={
-   role:"bot",
-   text:"Thank you. Your message has been received. You will receive a response shortly."
- }
-
- setMessages([...messages,userMsg,botMsg])
+ setMessages(prev => [...prev,userMessage])
+ setInput("")
+ setLoading(true)
 
  await supabase.from("messages").insert([
-   {
-     prompt:input,
-     status:"pending"
-   }
+   {prompt:input,status:"pending"}
  ])
 
- setInput("")
+ setTimeout(()=>{
+
+ const botMessage={
+   role:"bot",
+   text:"Thank you. Your message has been received. You will receive a response shortly.",
+   time:new Date().toLocaleTimeString()
+ }
+
+ setMessages(prev=>[...prev,botMessage])
+ setLoading(false)
+
+ },1000)
+
 }
 
 return(
 
-<div className="h-screen bg-gray-100 flex flex-col items-center">
+<div style={{
+height:"100vh",
+background:"#f5f7fb",
+display:"flex",
+justifyContent:"center",
+alignItems:"center",
+fontFamily:"Inter, sans-serif"
+}}>
 
-<div className="w-full max-w-2xl flex flex-col h-full">
+<div style={{
+width:"420px",
+height:"650px",
+background:"white",
+borderRadius:"14px",
+boxShadow:"0 10px 40px rgba(0,0,0,0.1)",
+display:"flex",
+flexDirection:"column"
+}}>
 
-<div className="p-4 text-center font-semibold text-lg border-b bg-white">
+<div style={{
+padding:"18px",
+borderBottom:"1px solid #eee",
+fontWeight:"600",
+fontSize:"18px"
+}}>
 Student Support AI
 </div>
 
-<div className="flex-1 overflow-y-auto p-4 space-y-3">
+<div style={{
+flex:1,
+overflowY:"auto",
+padding:"16px"
+}}>
 
 {messages.map((msg,index)=>(
 
-<div
-key={index}
-className={`flex ${msg.role==="user" ? "justify-end":"justify-start"}`}
+<div key={index}
+style={{
+display:"flex",
+justifyContent: msg.role==="user" ? "flex-end":"flex-start",
+marginBottom:"10px"
+}}
 >
 
-<div
-className={`px-4 py-2 rounded-xl max-w-xs text-sm
-${msg.role==="user"
-? "bg-blue-500 text-white"
-: "bg-white border"}
-`}
->
+<div style={{
+background: msg.role==="user" ? "#4f7cff":"#f1f3f6",
+color: msg.role==="user" ? "white":"black",
+padding:"10px 14px",
+borderRadius:"14px",
+maxWidth:"70%",
+fontSize:"14px"
+}}>
 
-{msg.text}
+<div>{msg.text}</div>
+
+<div style={{
+fontSize:"10px",
+opacity:0.6,
+marginTop:"4px"
+}}>
+{msg.time}
+</div>
 
 </div>
 
@@ -67,21 +117,45 @@ ${msg.role==="user"
 
 ))}
 
+{loading && (
+<div style={{fontSize:"13px",opacity:0.6}}>
+Bot is typing...
+</div>
+)}
+
+<div ref={bottomRef}></div>
+
 </div>
 
-<div className="p-4 border-t bg-white flex gap-2">
+<div style={{
+display:"flex",
+borderTop:"1px solid #eee",
+padding:"10px"
+}}>
 
 <input
 value={input}
 onChange={(e)=>setInput(e.target.value)}
 onKeyDown={(e)=> e.key==="Enter" && sendMessage()}
 placeholder="Type your message..."
-className="flex-1 border rounded-lg px-3 py-2 outline-none"
+style={{
+flex:1,
+border:"none",
+outline:"none",
+fontSize:"14px"
+}}
 />
 
 <button
 onClick={sendMessage}
-className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+style={{
+background:"#4f7cff",
+color:"white",
+border:"none",
+padding:"8px 16px",
+borderRadius:"8px",
+cursor:"pointer"
+}}
 >
 Send
 </button>
