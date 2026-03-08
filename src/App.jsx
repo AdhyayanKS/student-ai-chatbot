@@ -9,6 +9,19 @@ const [loading,setLoading] = useState(false)
 
 const bottomRef = useRef(null)
 
+const [userId] = useState(() => {
+
+ let id = localStorage.getItem("chatUser")
+
+ if(!id){
+   id = crypto.randomUUID()
+   localStorage.setItem("chatUser",id)
+ }
+
+ return id
+
+})
+
 useEffect(()=>{
  bottomRef.current?.scrollIntoView({behavior:"smooth"})
 },[messages])
@@ -28,8 +41,12 @@ async function sendMessage(){
  setLoading(true)
 
  await supabase.from("messages").insert([
-   {prompt:input,status:"pending"}
- ])
+ {
+   user_id:userId,
+   prompt:input,
+   status:"pending"
+ }
+])
 
  setTimeout(()=>{
 
@@ -43,6 +60,42 @@ async function sendMessage(){
  setLoading(false)
 
  },1000)
+
+}
+
+async function loadMessages(){
+
+ const {data} = await supabase
+   .from("messages")
+   .select("*")
+   .eq("user_id",userId)
+   .order("created_at",{ascending:true})
+
+ const history = data.flatMap(m => {
+
+   const arr = []
+
+   if(m.prompt){
+     arr.push({
+       role:"user",
+       text:m.prompt,
+       time:new Date(m.created_at).toLocaleTimeString()
+     })
+   }
+
+   if(m.response){
+     arr.push({
+       role:"bot",
+       text:m.response,
+       time:new Date(m.created_at).toLocaleTimeString()
+     })
+   }
+
+   return arr
+
+ })
+
+ setMessages(history)
 
 }
 

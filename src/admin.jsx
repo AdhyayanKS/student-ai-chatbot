@@ -4,48 +4,75 @@ import { supabase } from "./supabaseClient"
 export default function Admin(){
 
 const [messages,setMessages] = useState([])
+const [reply,setReply] = useState({})
 
 useEffect(()=>{
-fetchMessages()
+ fetchMessages()
 },[])
 
 async function fetchMessages(){
 
-const {data}=await supabase
-.from("messages")
-.select("*")
-.order("created_at",{ascending:false})
+ const {data}=await supabase
+   .from("messages")
+   .select("*")
+   .order("created_at",{ascending:false})
 
-setMessages(data)
+ setMessages(data)
+
+}
+
+async function sendReply(id){
+
+ await supabase
+   .from("messages")
+   .update({
+     response:reply[id],
+     status:"responded"
+   })
+   .eq("id",id)
+
+ fetchMessages()
 
 }
 
 return(
 
-<div className="p-10">
+<div style={{padding:"40px",maxWidth:"700px"}}>
 
-<h1 className="text-2xl font-semibold mb-6">
-Admin Dashboard
-</h1>
+<h1>Admin Dashboard</h1>
 
-{messages.map(msg=>(
+{messages.map(msg => (
 
 <div
 key={msg.id}
-className="border p-4 mb-4 rounded-lg"
+style={{
+border:"1px solid #eee",
+padding:"20px",
+marginBottom:"20px",
+borderRadius:"10px"
+}}
 >
 
-<p className="font-medium">
-Prompt:
-</p>
+<p><b>User:</b> {msg.user_id}</p>
 
-<p className="mb-2">
-{msg.prompt}
-</p>
+<p><b>Prompt:</b> {msg.prompt}</p>
 
-<p className="text-sm text-gray-500">
-Status: {msg.status}
-</p>
+<p><b>Status:</b> {msg.status}</p>
+
+<input
+placeholder="Write response..."
+value={reply[msg.id] || ""}
+onChange={(e)=>setReply({
+...reply,
+[msg.id]:e.target.value
+})}
+/>
+
+<button
+onClick={()=>sendReply(msg.id)}
+>
+Send Reply
+</button>
 
 </div>
 
